@@ -11,3 +11,11 @@ two:
   description: MyText
   image_url: MyString
   price: 9.99
+#START:ruby
+
+ruby:
+  title: Baris Karabay
+  description: Firat Universitesi Teknoloji Fakultesi Yazilim Muhendisligi 4. Sinif Ogrencisi
+  price: 5000
+  image_url: resim.jpg
+#END:ruby  

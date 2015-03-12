@@ -1,6 +1,9 @@
 require 'test_helper'
 
 class ProductTest < ActiveSupport::TestCase
+
+    fixtures :products
+
     test "urun ozellikleri bos gecilemez" do
     product = Product.new
     assert product.invalid?
@@ -9,4 +12,31 @@ class ProductTest < ActiveSupport::TestCase
     assert product.errors[:price].any?
     assert product.errors[:image_url].any?
 end
+test "product price must be positive" do
+    product = Product.new(title:       "My Book Title",
+                          description: "yyy",
+                          image_url:   "zzz.jpg")
+    product.price = -1
+    assert product.invalid?
+    assert_equal ["must be greater than or equal to 0.01"],
+      product.errors[:price]
+
+    product.price = 0
+    assert product.invalid?
+    assert_equal ["must be greater than or equal to 0.01"], 
+      product.errors[:price]
+
+    product.price = 1
+    assert product.valid?
+  end
+
+  test "product is not valid without a unique title" do
+    product = Product.new(title:       products(:ruby).title,
+                          description: "denemeee", 
+                          price:       1, 
+                          image_url:   "resim.gif")
+
+    assert product.invalid?
+    assert_equal ["Bu title daha onceden alinmis"], product.errors[:title]
+  end
 end
