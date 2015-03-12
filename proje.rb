@@ -13,12 +13,12 @@ rails s
 //seeds.rb dosyası 
         Product.delete_all
         Product.create(title: 'Ruby ile programlama', 
-	description: 
+  description: 
           % {<p>
-      	Ruby ile programlamaya giris bla bla bla bla bla
-      	    </p>},
-      	image_url: 'resim.jpg',
-      	price: 49.98)
+        Ruby ile programlamaya giris bla bla bla bla bla
+            </p>},
+        image_url: 'resim.jpg',
+        price: 49.98)
 
 rake db:seed
 
@@ -181,7 +181,7 @@ test "product price must be positive" do
     assert product.valid?
   end
 
- //test/models/product_test.rb dosyasında Resim uzantılarının geçerlilik kontrolü aşağıda yapılmıştır 
+// test/models/product_test.rb dosyasında Resim uzantılarının geçerlilik kontrolü aşağıda yapılmıştır 
 
 def new_product(image_url)
     Product.new(title:       "My Book Title",
@@ -223,4 +223,18 @@ ruby:
     assert product.invalid?
     assert_equal ["Bu title daha onceden alinmis"], product.errors[:title]
   end
+
+// test/models/product_test.rb dosyasında aşağıdaki kod kullanılarak hata verdiğinde bir hata tablosu oluşturmaya yarar.
+
+test "product is not valid without a unique title - i18n" do
+    product = Product.new(title:       products(:ruby).title,
+                          description: "yyy", 
+                          price:       1, 
+                          image_url:   "fred.gif")
+
+    assert product.invalid?
+    assert_equal [I18n.translate('errors.messages.taken')],
+                 product.errors[:title]
+  end
+
 
