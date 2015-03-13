@@ -253,4 +253,368 @@ Rails.application.routes.draw do
   root to: 'store#index', as: 'store'
 end
 
+// app/controllers/store_controller.rb dosyasının index action'ı aşağıdaki gibi değiştirildi. Title alanına göre sıralanarak listelendi yapıldı
+
+def index
+    @products = Product.order(:title)
+  end
+
+// app/views/store/index.html.erb dosyasının içeriği aşağıdaki gibi değiştirildi
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h1>Your Pragmatic Catalog</h1>
+
+<% @products.each do |product| %>
+  <div class="entry">
+    <%= image_tag(product.image_url) %>
+    <h3><%= product.title %></h3>
+    <%= sanitize(product.description) %>
+    <div class="price_line">
+      <span class="price"><%= product.price %></span>
+    </div>
+  </div>
+<% end %>
+
+// app/assets/stylesheets/store.css.scss dosyası aşağıdaki gibi değiştirildi
+
+// Place all the styles related to the Store controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+/* START_HIGHLIGHT */
+.store {
+  h1 {
+    margin: 0;
+    padding-bottom: 0.5em;
+    font:  150% sans-serif;
+    color: #226;
+    border-bottom: 3px dotted #77d;
+  }
+
+  /* An entry in the store catalog */
+  .entry {
+    overflow: auto;
+    margin-top: 1em;
+    border-bottom: 1px dotted #77d;
+    min-height: 100px;
+
+    img {
+      width: 80px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+      position: absolute;
+    }
+
+    h3 {
+      font-size: 120%;
+      font-family: sans-serif;
+      margin-left: 100px;
+      margin-top: 0;
+      margin-bottom: 2px;
+      color: #227;
+    }
+
+    p, div.price_line {
+      margin-left: 100px;
+      margin-top: 0.5em; 
+      margin-bottom: 0.8em; 
+    }
+
+    .price {
+      color: #44a;
+      font-weight: bold;
+      margin-right: 3em;
+    }
+  }
+}
+/* END_HIGHLIGHT */
+
+// app/views/layouts/application.html.erb dosyası aşağıdaki gibi değiştirildi
+
+<!-- START:head -->
+<!DOCTYPE html>
+<html>
+<head>
+<!-- START_HIGHLIGHT -->
+  <title>Pragprog Books Online Store</title>
+<!-- END_HIGHLIGHT -->
+  <!-- <label id="code.slt"/> --><%= stylesheet_link_tag    "application", media: "all",
+    "data-turbolinks-track" => true %>
+  <%= javascript_include_tag "application", "data-turbolinks-track" => true %><!-- <label id="code.jlt"/> -->
+  <%= csrf_meta_tags %><!-- <label id="code.csrf"/> -->
+</head>
+<!-- END:head -->
+<body class="<%= controller.controller_name %>">
+<!-- START_HIGHLIGHT -->
+  <div id="banner">
+    <%= image_tag("logo.png") %>
+    <%= @page_title || "Pragmatic Bookshelf" %><!-- <label id="code.depot.e.title"/> -->
+  </div>
+  <div id="columns">
+    <div id="side">
+      <ul>
+        <li><a href="http://www....">Home</a></li>
+        <li><a href="http://www..../faq">Questions</a></li>
+        <li><a href="http://www..../news">News</a></li>
+        <li><a href="http://www..../contact">Contact</a></li>
+      </ul>
+    </div>
+    <div id="main">
+<!-- END_HIGHLIGHT -->
+      <%= yield %><!-- <label id="code.depot.e.include"/> -->
+<!-- START_HIGHLIGHT -->
+    </div>
+  </div>
+<!-- END_HIGHLIGHT -->
+</body>
+</html>
+
+// app/assets/stylesheets/application.css.scss dosyası aşağıdaki gibi değiştirildi
+
+/*
+ * This is a manifest file that'll be compiled into application.css, which will
+ * include all the files listed below.
+ * 
+ * Any CSS and SCSS file within this directory, lib/assets/stylesheets,
+ * vendor/assets/stylesheets, or vendor/assets/stylesheets of plugins, if any,
+ * can be referenced here using a relative path.
+ * 
+ * You're free to add application-wide styles to this file and they'll appear
+ * at the top of the compiled file, but it's generally better to create a new
+ * file per style scope.
+ * 
+ *= require_self
+ *= require_tree .
+ */
+
+/* START_HIGHLIGHT */
+#banner {
+  background: #9c9;
+  padding: 10px;
+  border-bottom: 2px solid;
+  font: small-caps 40px/40px "Times New Roman", serif;
+  color: #282;
+  text-align: center;
+
+  img {
+    float: left;
+  }
+}
+
+#notice {
+  color: #000 !important;
+  border: 2px solid red;
+  padding: 1em;
+  margin-bottom: 2em;
+  background-color: #f0f0f0;
+  font: bold smaller sans-serif;
+}
+
+#columns {
+  background: #141;
+
+  #main {
+    margin-left: 17em;
+    padding: 1em;
+    background: white;
+  }
+
+  #side {
+    float: left;
+    padding: 1em 2em;
+    width: 13em;
+    background: #141;
+  
+    ul {
+      padding: 0;
+      li {
+        list-style: none;
+        a {
+          color: #bfb;
+          font-size: small;
+        }
+      }
+    }
+  }
+}
+/* END_HIGHLIGHT */
+
+
+// app/views/store/index.html.erb dosyası aşağıdaki gibi değiştirildi
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h1>Your Pragmatic Catalog</h1>
+
+<!-- START_HIGHLIGHT -->
+<% cache ['store', Product.latest] do %>
+<!-- END_HIGHLIGHT -->
+  <% @products.each do |product| %>
+<!-- START_HIGHLIGHT -->
+    <% cache ['entry', product] do %>
+<!-- END_HIGHLIGHT -->
+      <div class="entry">
+        <%= image_tag(product.image_url) %>
+        <h3><%= product.title %></h3>
+        <%= sanitize(product.description) %>
+        <div class="price_line">
+    <!-- START:currency -->
+          <span class="price"><%= number_to_currency(product.price) %></span>
+    <!-- END:currency -->
+        </div>
+      </div>
+<!-- START_HIGHLIGHT -->
+    <% end %>
+<!-- END_HIGHLIGHT -->
+  <% end %>
+<!-- START_HIGHLIGHT -->
+<% end %>
+<!-- END_HIGHLIGHT -->
+
+// test/controllers/store_controller_test.rb dosyası aşağıdaki gibi değiştirildi
+
+require 'test_helper'
+
+class StoreControllerTest < ActionController::TestCase
+  test "should get index" do
+    get :index
+    assert_response :success
+    assert_select '#columns #side a', minimum: 4
+    assert_select '#main .entry', 3
+    assert_select 'h3', 'Programming Ruby 1.9'
+    assert_select '.price', /\$[,\d]+\.\d\d/
+  end
+
+end
+
+// test/fixtures/products.yml dosyası aşağıdaki gibi değiştirildi
+
+# Read about fixtures at
+# http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+one:
+  title: MyString
+  description: MyText
+  image_url: MyString
+  price: 9.99
+
+two:
+  title: MyString
+  description: MyText
+  image_url: MyString
+  price: 9.99
+#START:ruby
+
+ruby: 
+  title:       Programming Ruby 1.9
+  description: 
+    Ruby is the fastest growing and most exciting dynamic
+    language out there.  If you need to get working programs
+    delivered fast, you should add Ruby to your toolbox.
+  price:       49.50
+  image_url:   ruby.png 
+#END:ruby
+
+
+
+// app/views/store/index.html.erb dosyasında undefined method `latest' diye bir hata aldım. <% cache ['store', Product.latest] do %> kısmında ki latest metodunu kaldırdığım zaman çalıştı.
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+<h1>Your Pragmatic Catalog</h1>
+<!-- START_HIGHLIGHT -->
+<% cache ['store', Product] do %>
+<!-- END_HIGHLIGHT -->
+  <% @products.each do |product| %>
+<!-- START_HIGHLIGHT -->
+    <% cache ['entry', product] do %>
+<!-- END_HIGHLIGHT -->
+      <div class="entry">
+        <%= image_tag(product.image_url) %>
+        <h3><%= product.title %></h3>
+        <%= sanitize(product.description) %>
+        <div class="price_line">
+    <!-- START:currency -->
+          <span class="price"><%= number_to_currency(product.price) %></span>
+    <!-- END:currency -->
+        </div>
+      </div>
+<!-- START_HIGHLIGHT -->
+    <% end %>
+<!-- END_HIGHLIGHT -->
+  <% end %>
+<!-- START_HIGHLIGHT -->
+<% end %>
+<!-- END_HIGHLIGHT -->
+
+
+// Partial sonuçlarını cache etmek
+
+ config.action_controller.perform_caching = true
+
+// app/models/product.rb dosyasında latest metodunu ekliyoruz.
+
+def self.latest
+    Product.order(:updated_at).last
+  end
+
+// app/views/store/index.html.erb dosyasını aşağıdaki gibi değiştiriyoruz.
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h1>Your Pragmatic Catalog</h1>
+
+<!-- START_HIGHLIGHT -->
+<% cache ['store', Product.latest] do %>
+<!-- END_HIGHLIGHT -->
+  <% @products.each do |product| %>
+<!-- START_HIGHLIGHT -->
+    <% cache ['entry', product] do %>
+<!-- END_HIGHLIGHT -->
+      <div class="entry">
+        <%= image_tag(product.image_url) %>
+        <h3><%= product.title %></h3>
+        <%= sanitize(product.description) %>
+        <div class="price_line">
+    <!-- START:currency -->
+          <span class="price"><%= number_to_currency(product.price) %></span>
+    <!-- END:currency -->
+        </div>
+      </div>
+<!-- START_HIGHLIGHT -->
+    <% end %>
+<!-- END_HIGHLIGHT -->
+  <% end %>
+<!-- START_HIGHLIGHT -->
+<% end %>
+<!-- END_HIGHLIGHT -->
+
+//  config/environments/development.rb dosyasında ki caching işlemini false yapıyoruz.
+
+  config.action_controller.perform_caching = false
+
+9. BÖLÜM
+
+//
+
+
+
+
+
+
+
+
+
+
+
+
 

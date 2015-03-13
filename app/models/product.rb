@@ -7,4 +7,7 @@ class Product < ActiveRecord::Base
     with:    %r{\.(gif|jpg|png)\Z}i,
     message: 'gif, png veya jpg resmi seciniz.'
   }
+  def self.latest
+    Product.order(:updated_at).last
+  end
 end
