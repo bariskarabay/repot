@@ -237,4 +237,20 @@ test "product is not valid without a unique title - i18n" do
                  product.errors[:title]
   end
 
+8. Bölüm
+
+// Store adında yeni bir controller ve index adında bir action oluşturuldu 
+
+rails generate controller Store index
+
+// config/routes.rb dosyası aşağıdaki gibi değiştirildi
+
+Rails.application.routes.draw do
+  get 'store/index'
+
+  resources :products
+
+  root to: 'store#index', as: 'store'
+end
+
 
