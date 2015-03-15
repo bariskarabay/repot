@@ -587,7 +587,7 @@ def self.latest
         <div class="price_line">
     <!-- START:currency -->
           <span class="price"><%= number_to_currency(product.price) %></span>
-    <!-- END:currency -->
+    <!-- END:currencyy -->
         </div>
       </div>
 <!-- START_HIGHLIGHT -->
