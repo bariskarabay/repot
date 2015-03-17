@@ -587,7 +587,7 @@ def self.latest
         <div class="price_line">
     <!-- START:currency -->
           <span class="price"><%= number_to_currency(product.price) %></span>
-    <!-- END:currencyy -->
+    <!-- END:currency -->
         </div>
       </div>
 <!-- START_HIGHLIGHT -->
@@ -606,15 +606,196 @@ def self.latest
 
 //
 
+rails generate scaffold cart
+
+rake db:migrate
+
+// app/controllers/concerns/current_cart.rb dosyası
+
+module CurrentCart
+  extend ActiveSupport::Concern
+
+  private
+
+      def set_cart
+        @cart = Cart.find(session[:cart_id])
+      rescue ActiveRecord::RecordNotFound
+        @cart = Cart.create
+        session[:cart_id] = @cart.id
+      end
+  end
+
+// line_item adında yeni bir scaffold yapısı oluşturuyoruz.
+
+rails generate scaffold line_item product:references cart:references
+
+rake db:migrate
+
+// app/models/cart.db
+
+class Cart < ActiveRecord::Base
+  has_many :line_items, dependent: :destroy
+end
+
+// app/models/product.rb dosyası
+
+private
+
+    def ensure_not_referenced_by_any_line_item
+      if line_items.empty?
+        return true
+      else
+        errors.add(:base, 'Line Items present')
+        return false
+      end
+    end
+
+// app/views/store/index.html.erb dosyasında Bir buton eklemek 
 
 
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h1>Your Pragmatic Catalog</h1>
+
+<% cache ['store', Product.latest] do %>
+  <% @products.each do |product| %>
+    <% cache ['entry', product] do %>
+      <div class="entry">
+        <%= image_tag(product.image_url) %>
+        <h3><%= product.title %></h3>
+        <%= sanitize(product.description) %>
+        <div class="price_line">
+          <span class="price"><%= number_to_currency(product.price) %></span>
+<!-- START_HIGHLIGHT -->
+          <%= button_to 'Add to Cart', line_items_path(product_id: product) %>
+<!-- END_HIGHLIGHT -->
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+<% end %>
+
+// spp/assets/stylesheets/store/css.scss dosyası aşağıdaki şekilde değiştirildi
 
 
+// Place all the styles related to the Store controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+/* START_HIGHLIGHT */
+.store {
+  h1 {
+    margin: 0;
+    padding-bottom: 0.5em;
+    font:  150% sans-serif;
+    color: #226;
+    border-bottom: 3px dotted #77d;
+  }
+
+  /* An entry in the store catalog */
+  .entry {
+    overflow: auto;
+    margin-top: 1em;
+    border-bottom: 1px dotted #77d;
+    min-height: 100px;
+
+    img {
+      width: 80px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+      position: absolute;
+    }
+
+    h3 {
+      font-size: 120%;
+      font-family: sans-serif;
+      margin-left: 100px;
+      margin-top: 0;
+      margin-bottom: 2px;
+      color: #227;
+    }
+
+//#START:inline
+    p, div.price_line {
+      margin-left: 100px;
+      margin-top: 0.5em; 
+      margin-bottom: 0.8em; 
+
+      /* START_HIGHLIGHT */
+      form, div {
+        display: inline;
+      }
+      /* END_HIGHLIGHT */
+    }
+//#END:inline
+
+    .price {
+      color: #44a;
+      font-weight: bold;
+      margin-right: 3em;
+    }
+  }
+}
+/* END_HIGHLIGHT */
+
+//
+
+// app/controllers/line_items_controller.rb dosyasına aşağıdaki kod parçası eklendş
+
+class LineItemsController < ApplicationController
+
+ include CurrentCart
+ before_action :set_cart, only: [:create]
+ before_action :set_line, only: [:show, :edit, :update, :destroy]
+ 
+end
+
+// app/controllers/line_items_controller.rb dosyasına aşağıdaki create metodu eklendi
+
+def create
+    product = Product.find(params[:product_id])
+    @line_item = @cart.line_items.build(product: product)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to @line_item.cart,
+          notice: 'Line item was successfully created.' }
+        format.json { render action: 'show',
+          status: :created, location: @line_item }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @line_item.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+// test/controllers/line_items_controller_test.rb dosyası
+
+ test "should create line_item" do
+    assert_difference('LineItem.count') do
+      post :create, product_id: products(:ruby).id
+    end
+
+    assert_redirected_to cart_path(assigns(:line_item).cart)
+  end
+
+// app/views/carts/show.html.erb dosyası aşağıdaki gibi değiştirildi
 
 
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
 
+<h2>Your Pragmatic Cart</h2>
+<ul>    
+  <% @cart.line_items.each do |item| %>
+    <li><%= item.product.title %></li>
+  <% end %>
+</ul>
 
+10. BÖLÜM
 
-
-
-
+//
