@@ -799,3 +799,182 @@ def create
 10. BÖLÜM
 
 //
+
+rails generate migration add_quantity_to_line_items quantity:integer
+
+// db/migrate/2015...._add_quantity_to_line_items.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+class AddQuantityToLineItems < ActiveRecord::Migration
+  def change
+    add_column :line_items, :quantity, :integer, default: 1
+  end
+end
+
+// 
+
+rake db:migrate
+
+// app/models/cart.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+class Cart < ActiveRecord::Base
+  has_many :line_items, dependent: :destroy
+
+  def add_product(product_id)
+    current_item = line_items.find_by(product_id: product_id)
+    if current_item
+      current_item.quantity += 1
+    else
+      current_item = line_items.build(product_id: product_id)
+    end
+    current_item
+  end
+end
+
+// app/controllers/line_items_controller.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+class LineItemsController < ApplicationController
+  include CurrentCart
+  before_action :set_cart, only: [:create]
+  before_action :set_line_item, only: [:show, :edit, :update, :destroy]
+
+  # GET /line_items
+  # GET /line_items.json
+  def index
+    @line_items = LineItem.all
+  end
+
+  # GET /line_items/1
+  # GET /line_items/1.json
+  def show
+  end
+
+  # GET /line_items/new
+  def new
+    @line_item = LineItem.new
+  end
+
+  # GET /line_items/1/edit
+  def edit
+  end
+
+  # POST /line_items
+  # POST /line_items.json
+  def create
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product.id)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to @line_item.cart,
+          notice: 'Line item was successfully created.' }
+        format.json { render action: 'show',
+          status: :created, location: @line_item }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @line_item.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /line_items/1
+  # PATCH/PUT /line_items/1.json
+  def update
+    respond_to do |format|
+      if @line_item.update(line_item_params)
+        format.html { redirect_to @line_item, notice: 'Line item was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /line_items/1
+  # DELETE /line_items/1.json
+  def destroy
+    @line_item.destroy
+    respond_to do |format|
+      format.html { redirect_to line_items_url }
+      format.json { head :no_content }
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_line_item
+      @line_item = LineItem.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def line_item_params
+      params.require(:line_item).permit(:product_id, :cart_id)
+    end
+  #...
+end
+
+// app/views/carts/show.html.erb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h2>Your Pragmatic Cart</h2>
+<ul>    
+  <% @cart.line_items.each do |item| %>
+<!-- START_HIGHLIGHT -->
+    <li><%= item.quantity %> &times; <%= item.product.title %></li>
+<!-- END_HIGHLIGHT -->
+  <% end %>
+</ul>
+
+// 
+
+rails generate migration combine_items_in_cart
+
+// db/migrate/combine_items_in_cart.rb dosyasında aşağıdaki değişiklikler yapılmıştır.
+
+
+class CombineItemsInCart < ActiveRecord::Migration
+
+  def up
+    # replace multiple items for a single product in a cart with a single item
+    Cart.all.each do |cart|
+      # count the number of each product in the cart
+      sums = cart.line_items.group(:product_id).sum(:quantity)
+
+      sums.each do |product_id, quantity|
+        if quantity > 1
+          # remove individual items
+          cart.line_items.where(product_id: product_id).delete_all
+
+          # replace with a single item
+          item = cart.line_items.build(product_id: product_id)
+          item.quantity = quantity
+          item.save!
+        end
+      end
+    end
+  end
+
+  def down
+    # split items with quantity>1 into multiple items
+    LineItem.where("quantity>1").each do |line_item|
+      # add individual items
+      line_item.quantity.times do 
+        LineItem.create cart_id: line_item.cart_id,
+          product_id: line_item.product_id, quantity: 1
+      end
+      # remove original item
+      line_item.destroy
+    end
+  end
+end
+
+
+//
+
+rake db:migrate
+
