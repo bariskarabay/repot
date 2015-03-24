@@ -1336,7 +1336,8 @@ class LineItemsController < ApplicationController
 
     respond_to do |format|
       if @line_item.save
-        format.html { redirect_to @line_item.cart }
+        format.html { redirect_to @line_item.cart,
+          notice: 'Line item was successfully created.' }
         format.json { render action: 'show',
           status: :created, location: @line_item }
       else
@@ -1473,6 +1474,171 @@ end
 
 11.BÖLÜM
 
-// 
+// app/views/carts/show.html.erb dosyasında aşağıdaki değişiklikler yapıldı
 
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<!-- START_HIGHLIGHT -->
+<h2>Your Cart</h2>
+<table>
+<!-- END_HIGHLIGHT -->
+  <% @cart.line_items.each do |item| %>
+<!-- START_HIGHLIGHT -->
+    <tr>
+      <td><%= item.quantity %>&times;</td>
+      <td><%= item.product.title %></td>
+      <td class="item_price"><%= number_to_currency(item.total_price) %></td>
+    </tr>
+<!-- END_HIGHLIGHT -->
+  <% end %>
+
+<!-- START_HIGHLIGHT -->
+  <tr class="total_line">
+    <td colspan="2">Total</td>
+    <td class="total_cell"><%= number_to_currency(@cart.total_price) %></td>
+  </tr>
+<!-- END_HIGHLIGHT -->
+<!-- START_HIGHLIGHT -->
+</table>
+<!-- END_HIGHLIGHT -->
+
+<%= button_to 'Empty cart', @cart, method: :delete,
+    data: { confirm: 'Are you sure?' } %>
+
+
+// app/views/carts/show.html.erb dosyasında aşağıdaki değişiklikler yapıldı
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h2>Your Cart</h2>
+<table>
+<!-- START_HIGHLIGHT -->
+  <%= render(@cart.line_items) %>
+<!-- END_HIGHLIGHT -->
+
+  <tr class="total_line">
+    <td colspan="2">Total</td>
+    <td class="total_cell"><%= number_to_currency(@cart.total_price) %></td>
+  </tr>
+
+</table>
+
+<%= button_to 'Empty cart', @cart, method: :delete,
+    data: { confirm: 'Are you sure?' } %>
+
+//  app/views/line_items/_line_item.html.erb dosyası oluştur ve içine aşağıdakiler ekle
+
+<tr>
+  <td><%= line_item.quantity %>&times;</td>
+  <td><%= line_item.product.title %></td>
+  <td class="item_price"><%= number_to_currency(line_item.total_price) %></td>
+</tr>
+
+
+//  app/views/carts/_cart.html.erb dosyası oluştur ve içine aşağıdakileri ekle
+
+
+<h2>Your Cart</h2>
+<table>
+<!-- START_HIGHLIGHT -->
+  <%= render(cart.line_items) %>
+<!-- END_HIGHLIGHT -->
+
+  <tr class="total_line">
+    <td colspan="2">Total</td>
+<!-- START_HIGHLIGHT -->
+    <td class="total_cell"><%= number_to_currency(cart.total_price) %></td>
+<!-- END_HIGHLIGHT -->
+  </tr>
+
+</table>
+
+<!-- START_HIGHLIGHT -->
+<%= button_to 'Empty cart', cart, method: :delete,
+#END_HIGHLIGHT
+    data: { confirm: 'Are you sure?' } %>
+
+//  app/views/carts/show.html.erb dosyasında aşağıdaki gibi değişiklik yapıldı
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<!-- START_HIGHLIGHT -->
+<%= render @cart %>
+<!-- END_HIGHLIGHT -->
+
+//  app/views/carts/_cart.html.erb dosyasında aşağıdaki gibi değişiklik yapılmıştır.
+
+
+<h2>Your Cart</h2>
+<table>
+<!-- START_HIGHLIGHT -->
+  <%= render(cart.line_items) %>
+<!-- END_HIGHLIGHT -->
+
+  <tr class="total_line">
+    <td colspan="2">Total</td>
+<!-- START_HIGHLIGHT -->
+    <td class="total_cell"><%= number_to_currency(cart.total_price) %></td>
+<!-- END_HIGHLIGHT -->
+  </tr>
+
+</table>
+
+<!-- START_HIGHLIGHT -->
+<%= button_to 'Empty cart', cart, method: :delete,
+#END_HIGHLIGHT
+    data: { confirm: 'Are you sure?' } %>
+
+//  app/views/carts/show.html.erb dosyasında aşağıdaki gibi değişiklikler yapılmıştır
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<!-- START_HIGHLIGHT -->
+<%= render @cart %>
+<!-- END_HIGHLIGHT -->
+
+
+//  app/views/carts/_cart.html.erb dosyasında aşağıdaki değişiklikler yapıldı
+
+
+<h2>Your Cart</h2>
+<table>
+<!-- START_HIGHLIGHT -->
+  <%= render(cart.line_items) %>
+<!-- END_HIGHLIGHT -->
+
+  <tr class="total_line">
+    <td colspan="2">Total</td>
+<!-- START_HIGHLIGHT -->
+    <td class="total_cell"><%= number_to_currency(cart.total_price) %></td>
+<!-- END_HIGHLIGHT -->
+  </tr>
+
+</table>
+
+<!-- START_HIGHLIGHT -->
+<%= button_to 'Empty cart', cart, method: :delete,
+#END_HIGHLIGHT
+    data: { confirm: 'Are you sure?' } %>
+
+//  app/views/carts/show.html.erb dosyasında aşağıdaki gibi değişiklikler yapılmıştır
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<!-- START_HIGHLIGHT -->
+<%= render @cart %>
+<!-- END_HIGHLIGHT -->
+
+//  
 
