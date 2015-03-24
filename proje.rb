@@ -967,6 +967,7 @@ class CombineItemsInCart < ActiveRecord::Migration
         LineItem.create cart_id: line_item.cart_id,
           product_id: line_item.product_id, quantity: 1
       end
+
       # remove original item
       line_item.destroy
     end
@@ -974,7 +975,504 @@ class CombineItemsInCart < ActiveRecord::Migration
 end
 
 
-//
+// app/controllers/carts_controller.rb dosyasında aşağıdaki değişiklikler yapıldı
 
 rake db:migrate
+
+class CartsController < ApplicationController
+  before_action :set_cart, only: [:show, :edit, :update, :destroy]
+  rescue_from ActiveRecord::RecordNotFound, with: :invalid_cart
+  # GET /carts
+  # GET /carts.json
+
+
+  def index
+    @carts = Cart.all
+  end
+
+  # GET /carts/1
+  # GET /carts/1.json
+  def show
+  end
+
+  # GET /carts/new
+  def new
+    @cart = Cart.new
+  end
+
+  # GET /carts/1/edit
+  def edit
+  end
+
+  # POST /carts
+  # POST /carts.json
+  def create
+    @cart = Cart.new(cart_params)
+
+    respond_to do |format|
+      if @cart.save
+        format.html { redirect_to @cart, notice: 'Cart was successfully created.' }
+        format.json { render :show, status: :created, location: @cart }
+      else
+        format.html { render :new }
+        format.json { render json: @cart.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /carts/1
+  # PATCH/PUT /carts/1.json
+  def update
+    respond_to do |format|
+      if @cart.update(cart_params)
+        format.html { redirect_to @cart, notice: 'Cart was successfully updated.' }
+        format.json { render :show, status: :ok, location: @cart }
+      else
+        format.html { render :edit }
+        format.json { render json: @cart.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /carts/1
+  # DELETE /carts/1.json
+  def destroy
+    @cart.destroy
+    respond_to do |format|
+      format.html { redirect_to carts_url, notice: 'Cart was successfully destroyed.' }
+      format.json { head :no_content }
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_cart
+      @cart = Cart.find(params[:id])
+    end
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def cart_params
+      params[:cart]
+    end
+    def invalid_cart
+      logger.error "Attempt to access invalid cart #{params[:id]}"
+      redirect_to store_url, notice: 'invalid cart'
+    end
+end
+
+// repot/test/controllers/line_items_controller_test.rb
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+require 'test_helper'
+
+class LineItemsControllerTest < ActionController::TestCase
+  setup do
+    @line_item = line_items(:one)
+  end
+
+  test "should get index" do
+    get :index
+    assert_response :success
+    assert_not_nil assigns(:line_items)
+  end
+
+  test "should get new" do
+    get :new
+    assert_response :success
+  end
+
+  test "should create line_item" do
+    assert_difference('LineItem.count') do
+      post :create, product_id: products(:ruby).id
+    end
+
+    assert_redirected_to cart_path(assigns(:line_item).cart)
+  end
+
+  test "should show line_item" do
+    get :show, id: @line_item
+    assert_response :success
+  end
+
+  test "should get edit" do
+    get :edit, id: @line_item
+    assert_response :success
+  end
+
+  test "should update line_item" do
+    patch :update, id: @line_item, line_item: { product_id: @line_item.product_id }
+    assert_redirected_to line_item_path(assigns(:line_item))
+  end
+
+  test "should destroy line_item" do
+    assert_difference('LineItem.count', -1) do
+      delete :destroy, id: @line_item
+    end
+
+    assert_redirected_to line_items_path
+  end
+end
+
+// app/views/carts/show.html.erb dosyasında aşağıdaki değişiklikler yapıldı
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+<h2>Your Pragmatic Cart</h2>
+<ul>    
+  <% @cart.line_items.each do |item| %>
+    <li><%= item.quantity %> &times; <%= item.product.title %></li>
+  <% end %>
+</ul>
+<!-- START_HIGHLIGHT -->
+<%= button_to 'Empty cart', @cart, method: :delete,
+    data: { confirm: 'Are you sure?' } %>
+<!-- END_HIGHLIGHT -->
+
+
+// repot/app/controllers/carts_controller.rb dosyasında aşağıdaki değişiklikler yapıldı.
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+class CartsController < ApplicationController
+  before_action :set_cart, only: [:show, :edit, :update, :destroy]
+  rescue_from ActiveRecord::RecordNotFound, with: :invalid_cart
+  # GET /carts
+  # GET /carts.json
+  def index
+    @carts = Cart.all
+  end
+
+  # GET /carts/1
+  # GET /carts/1.json
+  def show
+  end
+
+  # GET /carts/new
+  def new
+    @cart = Cart.new
+  end
+
+  # GET /carts/1/edit
+  def edit
+  end
+
+  # POST /carts
+  # POST /carts.json
+  def create
+    @cart = Cart.new(cart_params)
+
+    respond_to do |format|
+      if @cart.save
+        format.html { redirect_to @cart, notice: 'Cart was successfully created.' }
+        format.json { render action: 'show', status: :created, location: @cart }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @cart.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /carts/1
+  # PATCH/PUT /carts/1.json
+  def update
+    respond_to do |format|
+      if @cart.update(cart_params)
+        format.html { redirect_to @cart, notice: 'Cart was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @cart.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /carts/1
+  # DELETE /carts/1.json
+  def destroy
+    @cart.destroy if @cart.id == session[:cart_id]
+    session[:cart_id] = nil
+    respond_to do |format|
+      format.html { redirect_to store_url,
+        notice: 'Your cart is currently empty' }
+      format.json { head :no_content }
+    end
+  end
+
+  # ...
+  private
+  # ...
+
+    def set_cart
+      @cart = Cart.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def cart_params
+      params[:cart]
+    end
+    def invalid_cart
+      logger.error "Attempt to access invalid cart #{params[:id]}"
+      redirect_to store_url, notice: 'Invalid cart'
+    end
+end
+
+
+// test/controllers/carts_controller_test.rb dosyasında aşağıdaki değişiklikler yapıldı
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+require 'test_helper'
+
+class CartsControllerTest < ActionController::TestCase
+  setup do
+    @cart = carts(:one)
+  end
+
+  test "should get index" do
+    get :index
+    assert_response :success
+    assert_not_nil assigns(:carts)
+  end
+
+  test "should get new" do
+    get :new
+    assert_response :success
+  end
+
+  test "should create cart" do
+    assert_difference('Cart.count') do
+      post :create, cart: {  }
+    end
+
+    assert_redirected_to cart_path(assigns(:cart))
+  end
+
+  test "should show cart" do
+    get :show, id: @cart
+    assert_response :success
+  end
+
+  test "should get edit" do
+    get :edit, id: @cart
+    assert_response :success
+  end
+
+  test "should update cart" do
+    patch :update, id: @cart, cart: {  }
+    assert_redirected_to cart_path(assigns(:cart))
+  end
+
+  test "should destroy cart" do
+    assert_difference('Cart.count', -1) do
+      session[:cart_id] = @cart.id
+      delete :destroy, id: @cart
+    end
+
+    assert_redirected_to store_path
+  end
+end
+
+
+// app/controller/line_items_controller.rb dosyası içinde aşağıdaki değişiklikler yapıldı
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+class LineItemsController < ApplicationController
+  include CurrentCart
+  before_action :set_cart, only: [:create]
+  before_action :set_line_item, only: [:show, :edit, :update, :destroy]
+
+  # GET /line_items
+  # GET /line_items.json
+  def index
+    @line_items = LineItem.all
+  end
+
+  # GET /line_items/1
+  # GET /line_items/1.json
+  def show
+  end
+
+  # GET /line_items/new
+  def new
+    @line_item = LineItem.new
+  end
+
+  # GET /line_items/1/edit
+  def edit
+  end
+
+  # POST /line_items
+  # POST /line_items.json
+  def create
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product.id)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to @line_item.cart }
+        format.json { render action: 'show',
+          status: :created, location: @line_item }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @line_item.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /line_items/1
+  # PATCH/PUT /line_items/1.json
+  def update
+    respond_to do |format|
+      if @line_item.update(line_item_params)
+        format.html { redirect_to @line_item, notice: 'Line item was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /line_items/1
+  # DELETE /line_items/1.json
+  def destroy
+    @line_item.destroy
+    respond_to do |format|
+      format.html { redirect_to line_items_url }
+      format.json { head :no_content }
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_line_item
+      @line_item = LineItem.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white
+    # list through.
+    def line_item_params
+      params.require(:line_item).permit(:product_id)
+    end
+  #...
+end
+
+
+//  app/views/carts/show.html.erb dosyasında aşağıdaki değişiklikler yapıldı
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<!-- START_HIGHLIGHT -->
+<h2>Your Cart</h2>
+<table>
+<!-- END_HIGHLIGHT -->
+  <% @cart.line_items.each do |item| %>
+<!-- START_HIGHLIGHT -->
+    <tr>
+      <td><%= item.quantity %>&times;</td>
+      <td><%= item.product.title %></td>
+      <td class="item_price"><%= number_to_currency(item.total_price) %></td>
+    </tr>
+<!-- END_HIGHLIGHT -->
+  <% end %>
+
+<!-- START_HIGHLIGHT -->
+  <tr class="total_line">
+    <td colspan="2">Total</td>
+    <td class="total_cell"><%= number_to_currency(@cart.total_price) %></td>
+  </tr>
+<!-- END_HIGHLIGHT -->
+<!-- START_HIGHLIGHT -->
+</table>
+<!-- END_HIGHLIGHT -->
+
+<%= button_to 'Empty cart', @cart, method: :delete,
+    data: { confirm: 'Are you sure?' } %>
+
+
+//  app/models/line_item.rb dosyasında aşağıdaki değişiklikler yapıldı
+
+class LineItem < ActiveRecord::Base
+  belongs_to :product
+  belongs_to :cart
+
+  def total_price
+    product.price * quantity
+  end
+end
+
+//  app/models/cart.rb dosyasında aşağıdaki değişiklikler yapıldı
+
+class Cart < ActiveRecord::Base
+  has_many :line_items, dependent: :destroy
+
+  def add_product(product_id)
+    current_item = line_items.find_by(product_id: product_id)
+    if current_item
+      current_item.quantity += 1
+    else
+      current_item = line_items.build(product_id: product_id)
+    end
+    current_item
+  end
+
+  def total_price
+    line_items.to_a.sum { |item| item.total_price }
+  end
+end
+
+//  app/assets/stylesheets/carts.css.scss dosyasında aşağıdaki değişiklikler yapıldı
+
+
+// Place all the styles related to the Carts controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+/* START_HIGHLIGHT */
+.carts {
+  .item_price, .total_line {
+    text-align: right;
+  }
+  .total_line .total_cell {
+    font-weight: bold;
+    border-top: 1px solid #595;
+  }
+}
+/* END_HIGHLIGHT */
+
+
+11.BÖLÜM
+
+// 
+
 
