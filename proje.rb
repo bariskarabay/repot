@@ -2519,4 +2519,651 @@ end
 12. BÖLÜM
 
 
-//   
+//  
+
+ rails generate scaffold order name:string address:text \
+email:string pay_type:string
+
+//
+
+rails generate migration add_order_id_to_line_item \
+order_id:integer
+
+
+//  app/controllers/orders_controller.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+class OrdersController < ApplicationController
+  include CurrentCart
+  before_action :set_cart, only: [:new, :create]
+  before_action :set_order, only: [:show, :edit, :update, :destroy]
+
+  # GET /orders
+  # GET /orders.json
+  def index
+    @orders = Order.all
+  end
+
+  # GET /orders/1
+  # GET /orders/1.json
+  def show
+  end
+
+  # GET /orders/new
+  def new
+    if @cart.line_items.empty?
+      redirect_to store_url, notice: "Your cart is empty"
+      return
+    end
+
+    @order = Order.new
+  end
+
+  # GET /orders/1/edit
+  def edit
+  end
+
+  # POST /orders
+  # POST /orders.json
+  def create
+    @order = Order.new(order_params)
+    @order.add_line_items_from_cart(@cart)
+
+    respond_to do |format|
+      if @order.save
+        Cart.destroy(session[:cart_id])
+        session[:cart_id] = nil
+    
+        format.html { redirect_to store_url, notice: 
+          'Thank you for your order.' }
+        format.json { render action: 'show', status: :created,
+          location: @order }
+      
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @order.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /orders/1
+  # PATCH/PUT /orders/1.json
+  def update
+    respond_to do |format|
+      if @order.update(order_params)
+        format.html { redirect_to @order, notice: 'Order was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @order.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /orders/1
+  # DELETE /orders/1.json
+  def destroy
+    @order.destroy
+    respond_to do |format|
+      format.html { redirect_to orders_url }
+      format.json { head :no_content }
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_order
+      @order = Order.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def order_params
+      params.require(:order).permit(:name, :address, :email, :pay_type)
+    end
+  #...
+end
+
+
+//  app/test/controllers/orders_controller_test.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+require 'test_helper'
+
+class OrdersControllerTest < ActionController::TestCase
+  setup do
+    @order = orders(:one)
+  end
+
+  test "should get index" do
+    get :index
+    assert_response :success
+    assert_not_nil assigns(:orders)
+  end
+
+  test "requires item in cart" do
+    get :new
+    assert_redirected_to store_path
+    assert_equal flash[:notice], 'Your cart is empty'
+  end
+
+  test "should get new" do
+    item = LineItem.new
+    item.build_cart
+    item.product = products(:ruby)
+    item.save!
+    session[:cart_id] = item.cart.id
+    get :new
+    assert_response :success
+  end
+
+  test "should create order" do
+    assert_difference('Order.count') do
+      post :create, order: { address: @order.address, email: @order.email, name: @order.name, pay_type: @order.pay_type }
+    end
+    assert_redirected_to order_path(assigns(:order))
+  end
+
+  test "should show order" do
+    get :show, id: @order
+    assert_response :success
+  end
+
+  test "should get edit" do
+    get :edit, id: @order
+    assert_response :success
+  end
+
+  test "should update order" do
+    patch :update, id: @order, order: { address: @order.address, email: @order.email, name: @order.name, pay_type: @order.pay_type }
+    assert_redirected_to order_path(assigns(:order))
+  end
+
+  test "should destroy order" do
+    assert_difference('Order.count', -1) do
+      delete :destroy, id: @order
+    end
+
+    assert_redirected_to orders_path
+  end
+end
+
+
+// app/views/orders/new.html.erb dosyası aşağıdaki gibi değiştirilmiştir
+
+
+<div class="depot_form">
+  <fieldset>
+    <legend>Please Enter Your Details</legend>
+    <%= render 'form' %>
+  </fieldset>
+</div>
+
+
+//  app/views/orders/_form.html.erb dosyasında aşağıdaki gibi değişiklikler yapılmıştır
+
+
+
+<%= form_for(@order) do |f| %>
+  <% if @order.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@order.errors.count, "error") %>
+      prohibited this order from being saved:</h2>
+
+      <ul>
+      <% @order.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :name %><br>
+<!-- START_HIGHLIGHT -->
+    <%= f.text_field :name, size: 40 %>
+<!-- END_HIGHLIGHT -->
+  </div>
+  <div class="field">
+    <%= f.label :address %><br>
+<!-- START_HIGHLIGHT -->
+    <%= f.text_area :address, rows: 3, cols: 40 %>
+<!-- END_HIGHLIGHT -->
+  </div>
+  <div class="field">
+    <%= f.label :email %><br>
+<!-- START_HIGHLIGHT -->
+    <%= f.email_field :email, size: 40 %>
+<!-- END_HIGHLIGHT -->
+  </div>
+  <div class="field">
+    <%= f.label :pay_type %><br>
+<!-- START_HIGHLIGHT -->
+    <%= f.select :pay_type, Order::PAYMENT_TYPES,
+                  prompt: 'Select a payment method' %>
+<!-- END_HIGHLIGHT -->
+  </div>
+  <div class="actions">
+<!-- START_HIGHLIGHT -->
+    <%= f.submit 'Place Order' %>
+<!-- END_HIGHLIGHT -->
+  </div>
+<% end %>
+
+
+//  app/models/order.rb dosyasında aşağıdaki gibi değişiklikler yapılmıştır
+
+
+class Order < ActiveRecord::Base
+  PAYMENT_TYPES = [ "Check", "Credit card", "Purchase order" ]
+  has_many :line_items, dependent: :destroy
+  validates :name, :address, :email, presence: true
+  validates :pay_type, inclusion: PAYMENT_TYPES
+end
+
+
+//   app/assets/stylesheets/application.css.scss dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+
+/*
+ * This is a manifest file that'll be compiled into application.css, which will
+ * include all the files listed below.
+ * 
+ * Any CSS and SCSS file within this directory, lib/assets/stylesheets,
+ * vendor/assets/stylesheets, or vendor/assets/stylesheets of plugins, if any,
+ * can be referenced here using a relative path.
+ * 
+ * You're free to add application-wide styles to this file and they'll appear
+ * at the top of the compiled file, but it's generally better to create a new
+ * file per style scope.
+ * 
+ *= require_self
+ *= require_tree .
+ */
+
+#banner {
+  background: #9c9;
+  padding: 10px;
+  border-bottom: 2px solid;
+  font: small-caps 40px/40px "Times New Roman", serif;
+  color: #282;
+  text-align: center;
+
+  img {
+    float: left;
+  }
+}
+
+#notice {
+  color: #000 !important;
+  border: 2px solid red;
+  padding: 1em;
+  margin-bottom: 2em;
+  background-color: #f0f0f0;
+  font: bold smaller sans-serif;
+}
+
+#columns {
+  background: #141;
+
+  #main {
+    margin-left: 17em;
+    padding: 1em;
+    background: white;
+  }
+
+//#START:side
+  #side {
+    float: left;
+    padding: 1em 2em;
+    width: 13em;
+    background: #141;
+
+/* START_HIGHLIGHT */
+    form, div {
+      display: inline;
+    }  
+ 
+    input {
+      font-size: small;
+    }
+
+    #cart {
+      font-size: smaller;
+      color:     white;
+
+      table {
+        border-top:    1px dotted #595;
+        border-bottom: 1px dotted #595;
+        margin-bottom: 10px;
+      }
+    }
+
+/* END_HIGHLIGHT */
+    ul {
+      padding: 0;
+
+      li {
+        list-style: none;
+
+        a {
+          color: #bfb;
+          font-size: small;
+        }
+      }
+    }
+  }
+//#END:side
+}
+
+//#START:form
+.depot_form {
+  fieldset {
+    background: #efe;
+
+    legend {
+      color: #dfd;
+      background: #141;
+      font-family: sans-serif;
+      padding: 0.2em 1em;
+    }
+  }
+
+  form {
+    label {
+      width: 5em;
+      float: left;
+      text-align: right;
+      padding-top: 0.2em;
+      margin-right: 0.1em;
+      display: block;
+    }
+
+    select, textarea, input {
+      margin-left: 0.5em;
+    }
+
+    .submit {
+      margin-left: 4em;
+    }
+
+    br {
+      display: none
+    }
+  }
+}
+//#END:form
+
+
+
+//  app/models/order.rb dosyasında aşağıdaki gibi değişiklikler yapılmıştır
+
+
+
+class Order < ActiveRecord::Base
+  PAYMENT_TYPES = [ "Check", "Credit card", "Purchase order" ]
+  has_many :line_items, dependent: :destroy
+  # ...
+  validates :name, :address, :email, presence: true
+  validates :pay_type, inclusion: PAYMENT_TYPES
+end
+
+
+//  test/fixtures/orders.yml dosyasında aşağıdaki gibi değişiklik gerçekleştirilmiştir
+
+
+
+# Read about fixtures at
+# http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+#START_HIGHLIGHT
+  name: Dave Thomas
+#END_HIGHLIGHT
+  address: MyText
+#START_HIGHLIGHT
+  email: dave@example.org
+#END_HIGHLIGHT
+#START_HIGHLIGHT
+  pay_type: Check
+#END_HIGHLIGHT
+
+two:
+  name: MyString
+  address: MyText
+  email: MyString
+  pay_type: MyString
+
+
+//  test/fixtures/line_items.yml dosyasında aşağıdaki gibi değişiklikler yapılmıştır
+
+
+
+# Read about fixtures at
+# http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  product: ruby
+#START_HIGHLIGHT
+  order: one
+#END_HIGHLIGHT
+
+two:
+  product: ruby
+  cart: one
+
+
+//  app/models/line_item.rb dosyasında aşağıdaki değişliklikler yapılmıştır 
+
+
+class LineItem < ActiveRecord::Base
+  belongs_to :order
+  belongs_to :product
+  belongs_to :cart
+  def total_price
+    product.price * quantity
+  end
+end
+
+
+//  app/models/order.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+class Order < ActiveRecord::Base
+  PAYMENT_TYPES = [ "Check", "Credit card", "Purchase order" ]
+  has_many :line_items, dependent: :destroy
+  # ...
+  validates :name, :address, :email, presence: true
+  validates :pay_type, inclusion: PAYMENT_TYPES
+end 
+
+
+//   app/controllers/orders_controller.rb dosyasında aşağıdaki değişikliler yapıldı
+
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+class OrdersController < ApplicationController
+  include CurrentCart
+  before_action :set_cart, only: [:new, :create]
+  before_action :set_order, only: [:show, :edit, :update, :destroy]
+
+  # GET /orders
+  # GET /orders.json
+  def index
+    @orders = Order.all
+  end
+
+  # GET /orders/1
+  # GET /orders/1.json
+  def show
+  end
+
+  # GET /orders/new
+  def new
+    if @cart.line_items.empty?
+      redirect_to store_url, notice: "Your cart is empty"
+      return
+    end
+
+    @order = Order.new
+  end
+
+  # GET /orders/1/edit
+  def edit
+  end
+
+  # POST /orders
+  # POST /orders.json
+  def create
+    @order = Order.new(order_params)
+    @order.add_line_items_from_cart(@cart)
+
+    respond_to do |format|
+      if @order.save
+        Cart.destroy(session[:cart_id])
+        session[:cart_id] = nil
+    
+        format.html { redirect_to store_url, notice: 
+          'Thank you for your order.' }
+        format.json { render action: 'show', status: :created,
+          location: @order }
+      
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @order.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /orders/1
+  # PATCH/PUT /orders/1.json
+  def update
+    respond_to do |format|
+      if @order.update(order_params)
+        format.html { redirect_to @order, notice: 'Order was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @order.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /orders/1
+  # DELETE /orders/1.json
+  def destroy
+    @order.destroy
+    respond_to do |format|
+      format.html { redirect_to orders_url }
+      format.json { head :no_content }
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_order
+      @order = Order.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def order_params
+      params.require(:order).permit(:name, :address, :email, :pay_type)
+    end
+  #...
+end
+
+
+//   app/models/order.rb dosyasında aşağıdaki değişikler yapıldı
+
+
+
+class Order < ActiveRecord::Base
+  PAYMENT_TYPES = [ "Check", "Credit card", "Purchase order" ]
+  has_many :line_items, dependent: :destroy
+  # ...
+  validates :name, :address, :email, presence: true
+  validates :pay_type, inclusion: PAYMENT_TYPES
+  def add_line_items_from_cart(cart)
+    cart.line_items.each do |item|
+      item.cart_id = nil
+      line_items << item
+    end
+  end
+end
+
+
+//   test/controllers/orders_controller_test.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+
+require 'test_helper'
+
+class OrdersControllerTest < ActionController::TestCase
+  setup do
+    @order = orders(:one)
+  end
+
+  test "should get index" do
+    get :index
+    assert_response :success
+    assert_not_nil assigns(:orders)
+  end
+
+  test "requires item in cart" do
+    get :new
+    assert_redirected_to store_path
+    assert_equal flash[:notice], 'Your cart is empty'
+  end
+
+  test "should get new" do
+    item = LineItem.new
+    item.build_cart
+    item.product = products(:ruby)
+    item.save!
+    session[:cart_id] = item.cart.id
+
+    get :new
+    assert_response :success
+  end
+
+  test "should create order" do
+    assert_difference('Order.count') do
+      post :create, order: { address: @order.address, email: @order.email,
+        name: @order.name, pay_type: @order.pay_type }
+    end
+
+    assert_redirected_to store_path
+  end
+
+  test "should show order" do
+    get :show, id: @order
+    assert_response :success
+  end
+
+  test "should get edit" do
+    get :edit, id: @order
+    assert_response :success
+  end
+
+  test "should update order" do
+    patch :update, id: @order, order: { address: @order.address, email: @order.email, name: @order.name, pay_type: @order.pay_type }
+    assert_redirected_to order_path(assigns(:order))
+  end
+
+  test "should destroy order" do
+    assert_difference('Order.count', -1) do
+      delete :destroy, id: @order
+    end
+
+    assert_redirected_to orders_path
+  end
+end
