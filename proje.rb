@@ -1912,3 +1912,611 @@ class LineItemsController < ApplicationController
     end
   #...
 end
+
+//  app/views/store/index.htm.erb dosyası aşağıdaki şekilde değiştirilmiştir
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h1>Your Pragmatic Catalog</h1>
+
+<% cache ['store', Product.latest] do %>
+  <% @products.each do |product| %>
+    <% cache ['entry', product] do %>
+      <div class="entry">
+        <%= image_tag(product.image_url) %>
+        <h3><%= product.title %></h3>
+        <%= sanitize(product.description) %>
+        <div class="price_line">
+          <span class="price"><%= number_to_currency(product.price) %></span>
+<!-- START_HIGHLIGHT -->
+          <%= button_to 'Add to Cart', line_items_path(product_id: product),
+            remote: true %>
+<!-- END_HIGHLIGHT -->
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+<% end %>
+
+
+//  app/controllers/line_items_controller.rb dosyası aşağıdaki şekilde değiştirilmiştir
+
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+class LineItemsController < ApplicationController
+  include CurrentCart
+  before_action :set_cart, only: [:create]
+  before_action :set_line_item, only: [:show, :edit, :update, :destroy]
+
+  # GET /line_items
+  # GET /line_items.json
+  def index
+    @line_items = LineItem.all
+  end
+
+  # GET /line_items/1
+  # GET /line_items/1.json
+  def show
+  end
+
+  # GET /line_items/new
+  def new
+    @line_item = LineItem.new
+  end
+
+  # GET /line_items/1/edit
+  def edit
+  end
+
+  # POST /line_items
+  # POST /line_items.json
+  def create
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product.id)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to store_url }
+        format.js
+        format.json { render action: 'show',
+          status: :created, location: @line_item }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @line_item.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /line_items/1
+  # PATCH/PUT /line_items/1.json
+  def update
+    respond_to do |format|
+      if @line_item.update(line_item_params)
+        format.html { redirect_to @line_item, notice: 'Line item was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /line_items/1
+  # DELETE /line_items/1.json
+  def destroy
+    @line_item.destroy
+    respond_to do |format|
+      format.html { redirect_to line_items_url }
+      format.json { head :no_content }
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_line_item
+      @line_item = LineItem.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white
+    # list through.
+    def line_item_params
+      params.require(:line_item).permit(:product_id)
+    end
+  #...
+end
+
+
+//  app/views/line_items/create.js.erb dosyasını oluştur ve içeriğini aşağıdaki şekilde doldur
+
+
+$('#cart').html("<%= escape_javascript render(@cart) %>");
+
+
+//  app/assets/javascripts/application.js dosyasının içeriği aşağıdaki gibidir
+
+
+
+/***
+ * Excerpted from "Agile Web Development with Rails",
+ * published by The Pragmatic Bookshelf.
+ * Copyrights apply to this code. It may not be used to create training material, 
+ * courses, books, articles, and the like. Contact us if you are in doubt.
+ * We make no guarantees that this code is fit for any purpose. 
+ * Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+***/
+// This is a manifest file that'll be compiled into application.js, which will
+// include all the files listed below.
+//
+// Any JavaScript/Coffee file within this directory, lib/assets/javascripts,
+// vendor/assets/javascripts, or vendor/assets/javascripts of plugins, if any,
+// can be referenced here using a relative path.
+//
+// It's not advisable to add code directly here, but if you do, it'll appear at
+// the bottom of the compiled file.
+//
+// Read Sprockets README
+// (https://github.com/sstephenson/sprockets#sprockets-directives) for details
+// about supported directives.
+//
+//= require jquery
+//= require jquery.ui.effect-blind
+//= require jquery_ujs
+//= require turbolinks
+//= require_tree .
+
+
+//  app/controllers/line_items_controller.rb dosyası aşağıdaki gibi değiştirilmiştir
+
+
+class LineItemsController < ApplicationController
+  include CurrentCart
+  before_action :set_cart, only: [:create]
+  before_action :set_line_item, only: [:show, :edit, :update, :destroy]
+
+  # GET /line_items
+  # GET /line_items.json
+  def index
+    @line_items = LineItem.all
+  end
+
+  # GET /line_items/1
+  # GET /line_items/1.json
+  def show
+  end
+
+  # GET /line_items/new
+  def new
+    @line_item = LineItem.new
+  end
+
+  # GET /line_items/1/edit
+  def edit
+  end
+
+  # POST /line_items
+  # POST /line_items.json
+  def create
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product.id)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to store_url }
+        format.js   { @current_item = @line_item }
+        format.json { render action: 'show',
+          status: :created, location: @line_item }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @line_item.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /line_items/1
+  # PATCH/PUT /line_items/1.json
+  def update
+    respond_to do |format|
+      if @line_item.update(line_item_params)
+        format.html { redirect_to @line_item, notice: 'Line item was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /line_items/1
+  # DELETE /line_items/1.json
+  def destroy
+    @line_item.destroy
+    respond_to do |format|
+      format.html { redirect_to line_items_url }
+      format.json { head :no_content }
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_line_item
+      @line_item = LineItem.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white
+    # list through.
+    def line_item_params
+      params.require(:line_item).permit(:product_id)
+    end
+  #...
+end
+
+
+//  app/views/line_items/_line_item.html.erb dosyası aşağıdaki gibidir
+
+
+<!-- START_HIGHLIGHT -->
+<% if line_item == @current_item %>
+<tr id="current_item">
+<% else %>
+<tr>
+<% end %>
+<!-- END_HIGHLIGHT -->
+  <td><%= line_item.quantity %>&times;</td>
+  <td><%= line_item.product.title %></td>
+  <td class="item_price"><%= number_to_currency(line_item.total_price) %></td>
+</tr>
+
+
+// app/views/line_items/create.js.erb dosyası aşağıdaki gibidir
+
+
+$('#cart').html("<%= escape_javascript render(@cart) %>");
+//#START_HIGHLIGHT
+
+$('#current_item').css({'background-color':'#88ff88'}).
+  animate({'background-color':'#114411'}, 1000);
+//#END_HIGHLIGHT
+
+
+//  app/views/line_items/create.js.erb dosyası aşağıdaki gibi değiştirildi
+
+
+//#START_HIGHLIGHT
+if ($('#cart tr').length == 1) { $('#cart').show('blind', 1000); }
+
+//#END_HIGHLIGHT
+$('#cart').html("<%= escape_javascript render(@cart) %>");
+
+$('#current_item').css({'background-color':'#88ff88'}).
+  animate({'background-color':'#114411'}, 1000);
+
+
+// app/views/layouts/application.html.erb dosyası aşağıdaki gibi değiştirildi
+
+
+<!-- START:head -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pragprog Books Online Store</title>
+  <%= stylesheet_link_tag    "application", media: "all",
+    "data-turbolinks-track" => true %>
+  <%= javascript_include_tag defaults"data-turbolinks-track" => true %>
+  <%= csrf_meta_tags %>
+</head>
+<!-- END:head -->
+<body class="<%= controller.controller_name %>">
+  <div id="banner">
+    <%= image_tag("logo.png") %>
+    <%= @page_title || "Pragmatic Bookshelf" %>
+  </div>
+  <div id="columns">
+    <div id="side">
+<!-- START_HIGHLIGHT -->
+      <!-- START:hidden_div -->
+      <%= hidden_div_if(@cart.line_items.empty?, id: 'cart') do %>
+        <%= render @cart %>
+      <% end %>
+    <!-- END:hidden_div -->
+
+<!-- END_HIGHLIGHT -->
+      <ul>
+        <li><a href="http://www....">Home</a></li>
+        <li><a href="http://www..../faq">Questions</a></li>
+        <li><a href="http://www..../news">News</a></li>
+        <li><a href="http://www..../contact">Contact</a></li>
+      </ul>
+    </div>
+    <div id="main">
+      <%= yield %>
+    </div>
+  </div>
+</body>
+</html>
+
+ 
+//  app/helpers/application_helper.rb dosyasında aşağıdaki gibi değişiklik yapılmıştır
+
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+module ApplicationHelper
+  def hidden_div_if(condition, attributes = {}, &block)
+    if condition
+      attributes["style"] = "display: none"
+    end
+    content_tag("div", attributes, &block)
+  end
+end
+
+
+//   app/controllers/carts_controller.rb dosyasında aşağıdaki gibi değişiklikler yapılmıştır
+
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+class CartsController < ApplicationController
+  before_action :set_cart, only: [:show, :edit, :update, :destroy]
+  rescue_from ActiveRecord::RecordNotFound, with: :invalid_cart
+  # GET /carts
+  # GET /carts.json
+  def index
+    @carts = Cart.all
+  end
+
+  # GET /carts/1
+  # GET /carts/1.json
+  def show
+  end
+
+  # GET /carts/new
+  def new
+    @cart = Cart.new
+  end
+
+  # GET /carts/1/edit
+  def edit
+  end
+
+  # POST /carts
+  # POST /carts.json
+  def create
+    @cart = Cart.new(cart_params)
+
+    respond_to do |format|
+      if @cart.save
+        format.html { redirect_to @cart, notice: 'Cart was successfully created.' }
+        format.json { render action: 'show', status: :created, location: @cart }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @cart.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /carts/1
+  # PATCH/PUT /carts/1.json
+  def update
+    respond_to do |format|
+      if @cart.update(cart_params)
+        format.html { redirect_to @cart, notice: 'Cart was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @cart.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /carts/1
+  # DELETE /carts/1.json
+  def destroy
+    @cart.destroy if @cart.id == session[:cart_id]
+    session[:cart_id] = nil
+    respond_to do |format|
+      format.html { redirect_to store_url }
+      format.json { head :no_content }
+    end
+  end
+
+  # ...
+  private
+  # ...
+
+    def set_cart
+      @cart = Cart.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def cart_params
+      params[:cart]
+    end
+    def invalid_cart
+      logger.error "Attempt to access invalid cart #{params[:id]}"
+      redirect_to store_url, notice: 'Invalid cart'
+    end
+end
+
+
+//   app/views/store/index.html.erb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h1>Your Pragmatic Catalog</h1>
+
+<% cache ['store', Product.latest] do %>
+  <% @products.each do |product| %>
+    <% cache ['entry', product] do %>
+      <div class="entry">
+        <%= image_tag(product.image_url) %>
+        <h3><%= product.title %></h3>
+        <%= sanitize(product.description) %>
+        <div class="price_line">
+          <span class="price"><%= number_to_currency(product.price) %></span>
+          <%= button_to 'Add to Cart', line_items_path(product_id: product),
+            remote: true %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+<% end %>
+
+
+//   app/assets/javascript/store.js.coffe dosyasında aşağıdaki değişiklikler yapılmıştır
+
+# Place all the behaviors and hooks related to the matching controller here.
+# All this logic will automatically be available in application.js.
+# You can use CoffeeScript in this file: http://coffeescript.org/
+
+//#START_HIGHLIGHT
+$(document).on "ready page:change", ->
+  $('.store .entry > img').click ->
+    $(this).parent().find(':submit').click()
+//#END_HIGHLIGHT
+
+
+//   app/views/layouts/application.html.erb dosyasında aşağıdaki gibi değişiklikler yapılmıştır
+
+
+<!-- START:head -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pragprog Books Online Store</title>
+  <%= stylesheet_link_tag    "application", media: "all",
+    "data-turbolinks-track" => true %>
+  <%= javascript_include_tag "defaults", "data-turbolinks-track" => true %>
+  <%= csrf_meta_tags %>
+</head>
+<!-- END:head -->
+<body class="<%= controller.controller_name %>">
+  <div id="banner">
+    <%= image_tag("logo.png") %>
+    <%= @page_title || "Pragmatic Bookshelf" %>
+  </div>
+  <div id="columns">
+    <div id="side">
+<!-- START_HIGHLIGHT -->
+      <!-- START:hidden_div -->
+<!-- START_HIGHLIGHT -->
+      <% if @cart %>
+<!-- END_HIGHLIGHT -->
+        <%= hidden_div_if(@cart.line_items.empty?, id: 'cart') do %>
+          <%= render @cart %>
+        <% end %>
+<!-- START_HIGHLIGHT -->
+      <% end %>
+<!-- END_HIGHLIGHT -->
+    <!-- END:hidden_div -->
+
+<!-- END_HIGHLIGHT -->
+      <ul>
+        <li><a href="http://www....">Home</a></li>
+        <li><a href="http://www..../faq">Questions</a></li>
+        <li><a href="http://www..../news">News</a></li>
+        <li><a href="http://www..../contact">Contact</a></li>
+      </ul>
+    </div>
+    <div id="main">
+      <%= yield %>
+    </div>
+  </div>
+</body>
+</html>
+
+
+//  test/controllers/line_items_controller_test.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+require 'test_helper'
+
+class LineItemsControllerTest < ActionController::TestCase
+  setup do
+    @line_item = line_items(:one)
+  end
+
+  test "should get index" do
+    get :index
+    assert_response :success
+    assert_not_nil assigns(:line_items)
+  end
+
+  test "should get new" do
+    get :new
+    assert_response :success
+  end
+
+  test "should create line_item" do
+    assert_difference('LineItem.count') do
+      post :create, product_id: products(:ruby).id
+    end
+
+    assert_redirected_to store_path
+  end
+
+  test "should show line_item" do
+    get :show, id: @line_item
+    assert_response :success
+  end
+
+  test "should get edit" do
+    get :edit, id: @line_item
+    assert_response :success
+  end
+
+  test "should update line_item" do
+    patch :update, id: @line_item, line_item: { product_id: @line_item.product_id }
+    assert_redirected_to line_item_path(assigns(:line_item))
+  end
+
+  test "should destroy line_item" do
+    assert_difference('LineItem.count', -1) do
+      delete :destroy, id: @line_item
+    end
+
+    assert_redirected_to line_items_path
+  end
+
+  test "should create line_item via ajax" do
+    assert_difference('LineItem.count') do
+      xhr :post, :create, product_id: products(:ruby).id
+    end 
+
+    assert_response :success
+    assert_select_jquery :html, '#cart' do
+      assert_select 'tr#current_item td', /Programming Ruby 1.9/
+    end
+  end
+end
+
+
+12. BÖLÜM
+
+
+//   
