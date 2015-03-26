@@ -3379,4 +3379,598 @@ end
 13. BÖLÜM
 
 
-//    
+//  rails generate mailer OrderNotifier received shipped
+
+
+//  app/mailers/order_notifier.rb dosyasında aşağıdaki gibi değişiklikler yapılmıştır
+
+
+class OrderNotifier < ActionMailer::Base
+  default from: 'Sam Ruby <depot@example.com>'
+
+  def received
+    @greeting = "Hi"
+
+    mail to: "karabaysavas@hotmail.com"
+  end
+
+  def shipped
+    @greeting = "Hi"
+
+    mail to: "karabaysavas@hotmail.com"
+  end
+end
+
+
+
+//  app/views/order_notifier/received.text.erb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+Dear <%= @order.name %>
+
+Thank you for your recent order from The Pragmatic Store.
+
+You ordered the following items:
+
+<%= render @order.line_items -%>
+
+We'll send you a separate e-mail when your order ships.
+
+
+
+//   app/views/line_items/_line_item.text.erb dosyasını oluştur ve içeriğine aşağıdakileri ekle
+
+
+<%= sprintf("%2d x %s",
+            line_item.quantity,
+            truncate(line_item.product.title, length: 50)) %>
+
+
+//   app/mailers/order_notifier.rb dosyasının içeriği aşağıdaki gibidir
+
+
+
+class OrderNotifier < ActionMailer::Base
+  default from: 'Sam Ruby <depot@example.com>'
+
+  def received(order)
+    @order = order
+
+    mail to: order.email, subject: 'Pragmatic Store Order Confirmation'
+  end
+
+  def shipped(order)
+    @order = order
+
+    mail to: order.email, subject: 'Pragmatic Store Order Shipped'
+  end
+end
+
+
+
+//   app/controllers/orders_controller.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+class OrdersController < ApplicationController
+  skip_before_action :authorize, only: [:new, :create]
+  include CurrentCart
+  before_action :set_cart, only: [:new, :create]
+  before_action :set_order, only: [:show, :edit, :update, :destroy]
+
+  # GET /orders
+  # GET /orders.json
+  def index
+    @orders = Order.all
+  end
+
+  # GET /orders/1
+  # GET /orders/1.json
+  def show
+  end
+
+  # GET /orders/new
+  def new
+    if @cart.line_items.empty?
+      redirect_to store_url, notice: "Your cart is empty"
+      return
+    end
+
+    @order = Order.new
+  end
+
+  # GET /orders/1/edit
+  def edit
+  end
+
+  # POST /orders
+  # POST /orders.json
+  def create
+    @order = Order.new(order_params)
+    @order.add_line_items_from_cart(@cart)
+
+    respond_to do |format|
+      if @order.save
+        Cart.destroy(session[:cart_id])
+        session[:cart_id] = nil
+        OrderNotifier.received(@order).deliver
+        format.html { redirect_to store_url, notice: 
+          'Thank you for your order.' }
+        format.json { render action: 'show', status: :created,
+          location: @order }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @order.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /orders/1
+  # PATCH/PUT /orders/1.json
+  def update
+    respond_to do |format|
+      if @order.update(order_params)
+        format.html { redirect_to @order, notice: 'Order was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @order.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /orders/1
+  # DELETE /orders/1.json
+  def destroy
+    @order.destroy
+    respond_to do |format|
+      format.html { redirect_to orders_url }
+      format.json { head :no_content }
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_order
+      @order = Order.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def order_params
+      params.require(:order).permit(:name, :address, :email, :pay_type)
+    end
+  #...
+end
+
+
+//   app/mailers/order_notifier.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+class OrderNotifier < ActionMailer::Base
+  default from: 'Sam Ruby <depot@example.com>'
+  
+  def received(order)
+    @order = order
+
+    mail to: order.email, subject: 'Pragmatic Store Order Confirmation'
+  end
+
+  def shipped(order)
+    @order = order
+
+    mail to: order.email, subject: 'Pragmatic Store Order Shipped'
+  end
+end
+  
+
+//   app/controllers/orders_controller.rb dosyasında aiğıdaki gibi değişiklik yapılmıştır
+
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+class OrdersController < ApplicationController
+  skip_before_action :authorize, only: [:new, :create]
+  include CurrentCart
+  before_action :set_cart, only: [:new, :create]
+  before_action :set_order, only: [:show, :edit, :update, :destroy]
+
+  # GET /orders
+  # GET /orders.json
+  def index
+    @orders = Order.all
+  end
+
+  # GET /orders/1
+  # GET /orders/1.json
+  def show
+  end
+
+  # GET /orders/new
+  def new
+    if @cart.line_items.empty?
+      redirect_to store_url, notice: "Your cart is empty"
+      return
+    end
+
+    @order = Order.new
+  end
+
+  # GET /orders/1/edit
+  def edit
+  end
+
+  # POST /orders
+  # POST /orders.json
+  def create
+    @order = Order.new(order_params)
+    @order.add_line_items_from_cart(@cart)
+
+    respond_to do |format|
+      if @order.save
+        Cart.destroy(session[:cart_id])
+        session[:cart_id] = nil
+        OrderNotifier.received(@order).deliver
+        format.html { redirect_to store_url, notice: 
+          'Thank you for your order.' }
+        format.json { render action: 'show', status: :created,
+          location: @order }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @order.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /orders/1
+  # PATCH/PUT /orders/1.json
+  def update
+    respond_to do |format|
+      if @order.update(order_params)
+        format.html { redirect_to @order, notice: 'Order was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @order.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /orders/1
+  # DELETE /orders/1.json
+  def destroy
+    @order.destroy
+    respond_to do |format|
+      format.html { redirect_to orders_url }
+      format.json { head :no_content }
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_order
+      @order = Order.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def order_params
+      params.require(:order).permit(:name, :address, :email, :pay_type)
+    end
+  #...
+end
+
+
+//   app/mailers/order_notifier.rb dosyasında aşağıdaki gibi değişiklik yapılmıştır
+
+
+class OrderNotifier < ActionMailer::Base
+  default from: 'Sam Ruby <depot@example.com>'
+
+  # Subject can be set in your I18n file at config/locales/en.yml
+  # with the following lookup:
+  #
+  #   en.order_notifier.received.subject
+  #
+  def received(order)
+    @order = order
+
+    mail to: order.email, subject: 'Pragmatic Store Order Confirmation'
+  end
+
+  # Subject can be set in your I18n file at config/locales/en.yml
+  # with the following lookup:
+  #
+  #   en.order_notifier.shipped.subject
+  #
+  def shipped(order)
+    @order = order
+
+    mail to: order.email, subject: 'Pragmatic Store Order Shipped'
+  end
+end
+
+
+//   app/views/order_notifier/shipped.html.erb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+
+<h3>Pragmatic Order Shipped</h3>
+<p>
+  This is just to let you know that we've shipped your recent order:
+</p>
+
+<table>
+  <tr><th colspan="2">Qty</th><th>Description</th></tr>
+<%= render @order.line_items -%>
+</table>
+
+
+//   app/views/line_items/_line_item.html.erb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+
+<% if line_item == @current_item %>
+<tr id="current_item">
+<% else %>
+<tr>
+<% end %>
+  <td><%= line_item.quantity %>&times;</td>
+  <td><%= line_item.product.title %></td>
+  <td class="item_price"><%= number_to_currency(line_item.total_price) %></td>
+</tr>
+
+
+
+//    test/mailers/order_notifier_test.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+
+require 'test_helper'
+
+class OrderNotifierTest < ActionMailer::TestCase
+  test "received" do
+    mail = OrderNotifier.received(orders(:one))
+    assert_equal "Pragmatic Store Order Confirmation", mail.subject
+    assert_equal ["dave@example.org"], mail.to
+    assert_equal ["depot@example.com"], mail.from
+    assert_match /1 x Programming Ruby 1.9/, mail.body.encoded
+  end
+
+  test "shipped" do
+    mail = OrderNotifier.shipped(orders(:one))
+    assert_equal "Pragmatic Store Order Shipped", mail.subject
+    assert_equal ["dave@example.org"], mail.to
+    assert_equal ["depot@example.com"], mail.from
+    assert_match /<td>1&times;<\/td>\s*<td>Programming Ruby 1.9<\/td>/,
+      mail.body.encoded
+  end
+
+end
+
+
+//   rails generate integration_test user_stories 
+
+
+//   test/integration/user_stories_test.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+require 'test_helper'
+
+class UserStoriesTest < ActionDispatch::IntegrationTest
+  fixtures :products
+
+  # A user goes to the index page. They select a product, adding it to their
+  # cart, and check out, filling in their details on the checkout form. When
+  # they submit, an order is created containing their information, along with a
+  # single line item corresponding to the product they added to their cart.
+  
+  test "buying a product" do
+    LineItem.delete_all
+    Order.delete_all
+    ruby_book = products(:ruby)
+
+    get "/"
+    assert_response :success
+    assert_template "index"
+    
+    xml_http_request :post, '/line_items', product_id: ruby_book.id
+    assert_response :success 
+    
+    cart = Cart.find(session[:cart_id])
+    assert_equal 1, cart.line_items.size
+    assert_equal ruby_book, cart.line_items[0].product
+    
+    get "/orders/new"
+    assert_response :success
+    assert_template "new"
+    
+    post_via_redirect "/orders",
+                      order: { name:     "Dave Thomas",
+                               address:  "123 The Street",
+                               email:    "dave@example.com",
+                               pay_type: "Check" }
+    assert_response :success
+    assert_template "index"
+    cart = Cart.find(session[:cart_id])
+    assert_equal 0, cart.line_items.size
+    
+    orders = Order.all
+    assert_equal 1, orders.size
+    order = orders[0]
+    
+    assert_equal "Dave Thomas",      order.name
+    assert_equal "123 The Street",   order.address
+    assert_equal "dave@example.com", order.email
+    assert_equal "Check",            order.pay_type
+    
+    assert_equal 1, order.line_items.size
+    line_item = order.line_items[0]
+    assert_equal ruby_book, line_item.product
+
+    mail = ActionMailer::Base.deliveries.last
+    assert_equal ["dave@example.com"], mail.to
+    assert_equal 'Sam Ruby <depot@example.com>', mail[:from].value
+    assert_equal "Pragmatic Store Order Confirmation", mail.subject
+  end
+end
+
+
+
+//    test/integration/user_stories_test.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+require 'test_helper'
+
+class UserStoriesTest < ActionDispatch::IntegrationTest
+  fixtures :products
+
+  # A user goes to the index page. They select a product, adding it to their
+  # cart, and check out, filling in their details on the checkout form. When
+  # they submit, an order is created containing their information, along with a
+  # single line item corresponding to the product they added to their cart.
+  
+  test "buying a product" do
+    LineItem.delete_all
+    Order.delete_all
+    ruby_book = products(:ruby)
+
+    get "/"
+    assert_response :success
+    assert_template "index"
+    
+    xml_http_request :post, '/line_items', product_id: ruby_book.id
+    assert_response :success 
+    
+    cart = Cart.find(session[:cart_id])
+    assert_equal 1, cart.line_items.size
+    assert_equal ruby_book, cart.line_items[0].product
+    
+    get "/orders/new"
+    assert_response :success
+    assert_template "new"
+    
+    post_via_redirect "/orders",
+                      order: { name:     "Dave Thomas",
+                               address:  "123 The Street",
+                               email:    "dave@example.com",
+                               pay_type: "Check" }
+    assert_response :success
+    assert_template "index"
+    cart = Cart.find(session[:cart_id])
+    assert_equal 0, cart.line_items.size
+    
+    orders = Order.all
+    assert_equal 1, orders.size
+    order = orders[0]
+    
+    assert_equal "baris karabay",      order.name
+    assert_equal "123 cadde",   order.address
+    assert_equal "karabaysavas@hotmail.com", order.email
+    assert_equal "Check",            order.pay_type
+    
+    assert_equal 1, order.line_items.size
+    line_item = order.line_items[0]
+    assert_equal ruby_book, line_item.product
+
+    mail = ActionMailer::Base.deliveries.last
+    assert_equal ["karabaysavas@hotmail.com"], mail.to
+    assert_equal 'Baris Karabay <karabaysavas@hotmail.com>', mail[:from].value
+    assert_equal "Pragmatic Store Order Confirmation", mail.subject
+  end
+end
+
+
+
+//   test/integration/user_stories_test.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+#---
+# Excerpted from "Agile Web Development with Rails",
+# published by The Pragmatic Bookshelf.
+# Copyrights apply to this code. It may not be used to create training material, 
+# courses, books, articles, and the like. Contact us if you are in doubt.
+# We make no guarantees that this code is fit for any purpose. 
+# Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
+#---
+require 'test_helper'
+
+class UserStoriesTest < ActionDispatch::IntegrationTest
+  fixtures :products
+
+  # A user goes to the index page. They select a product, adding it to their
+  # cart, and check out, filling in their details on the checkout form. When
+  # they submit, an order is created containing their information, along with a
+  # single line item corresponding to the product they added to their cart.
+  
+  test "buying a product" do
+    LineItem.delete_all
+    Order.delete_all
+    ruby_book = products(:ruby)
+
+    get "/"
+    assert_response :success
+    assert_template "index"
+    
+    xml_http_request :post, '/line_items', product_id: ruby_book.id
+    assert_response :success 
+    
+    cart = Cart.find(session[:cart_id])
+    assert_equal 1, cart.line_items.size
+    assert_equal ruby_book, cart.line_items[0].product
+    
+    get "/orders/new"
+    assert_response :success
+    assert_template "new"
+    
+    post_via_redirect "/orders",
+                      order: { name:     "Dave Thomas",
+                               address:  "123 The Street",
+                               email:    "dave@example.com",
+                               pay_type: "Check" }
+    assert_response :success
+    assert_template "index"
+    cart = Cart.find(session[:cart_id])
+    assert_equal 0, cart.line_items.size
+    
+    orders = Order.all
+    assert_equal 1, orders.size
+    order = orders[0]
+    
+    assert_equal "Dave Thomas",      order.name
+    assert_equal "123 The Street",   order.address
+    assert_equal "dave@example.com", order.email
+    assert_equal "Check",            order.pay_type
+    
+    assert_equal 1, order.line_items.size
+    line_item = order.line_items[0]
+    assert_equal ruby_book, line_item.product
+
+    mail = ActionMailer::Base.deliveries.last
+    assert_equal ["dave@example.com"], mail.to
+    assert_equal 'Sam Ruby <depot@example.com>', mail[:from].value
+    assert_equal "Pragmatic Store Order Confirmation", mail.subject
+  end
+end
+
+
+14. BÖLÜM
+
+
+//
+
+
+  
