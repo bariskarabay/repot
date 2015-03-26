@@ -3167,3 +3167,216 @@ class OrdersControllerTest < ActionController::TestCase
     assert_redirected_to orders_path
   end
 end
+
+
+//  app/views/line_items/create.js.erb dosyasında aşağıdkai değişiklikler yapılmıştır
+
+
+//#START_HIGHLIGHT
+$('#notice').hide();
+
+//#END_HIGHLIGHT
+if ($('#cart tr').length == 1) { $('#cart').show('blind', 1000); }
+
+$('#cart').html("<%= escape_javascript render(@cart) %>");
+
+$('#current_item').css({'background-color':'#88ff88'}).
+  animate({'background-color':'#114411'}, 1000);
+
+
+//   app/controllers/products_controller.rb dosyasında aşağıdaki değişiklikler yapılmıştır.
+
+
+class ProductsController < ApplicationController
+  before_action :set_product, only: [:show, :edit, :update, :destroy]
+
+  # GET /products
+  # GET /products.json
+  def index
+    @products = Product.all
+  end
+
+  # GET /products/1
+  # GET /products/1.json
+  def show
+  end
+
+  # GET /products/new
+  def new
+    @product = Product.new
+  end
+
+  # GET /products/1/edit
+  def edit
+  end
+
+  # POST /products
+  # POST /products.json
+  def create
+    @product = Product.new(product_params)
+
+    respond_to do |format|
+      if @product.save
+        format.html { redirect_to @product,
+          notice: 'Product was successfully created.' }
+        format.json { render action: 'show', status: :created,
+          location: @product }
+      else
+        format.html { render action: 'new' }
+        format.json { render json: @product.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # PATCH/PUT /products/1
+  # PATCH/PUT /products/1.json
+  def update
+    respond_to do |format|
+      if @product.update(product_params)
+        format.html { redirect_to @product,
+          notice: 'Product was successfully updated.' }
+        format.json { head :no_content }
+      else
+        format.html { render action: 'edit' }
+        format.json { render json: @product.errors,
+          status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /products/1
+  # DELETE /products/1.json
+  def destroy
+    @product.destroy
+    respond_to do |format|
+      format.html { redirect_to products_url }
+      format.json { head :no_content }
+    end
+  end
+
+  def who_bought
+    @product = Product.find(params[:id])
+    @latest_order = @product.orders.order(:updated_at).last
+    if stale?(@latest_order)
+      respond_to do |format|
+        format.atom
+      end
+    end
+  end
+
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_product
+      @product = Product.find(params[:id])
+    end
+
+    # Never trust parameters from the scary internet, only allow the white
+    # list through.
+    def product_params
+      params.require(:product).permit(:title, :description, :image_url, :price)
+    end
+end
+
+
+//  app/views/products/who_bought.atom.builder adında yeni bir dosya oluştur.
+
+
+
+atom_feed do |feed|
+  feed.title "Who bought #{@product.title}"
+
+  feed.updated @latest_order.try(:updated_at) 
+
+  @product.orders.each do |order|
+    feed.entry(order) do |entry|
+      entry.title "Order #{order.id}"
+      entry.summary type: 'xhtml' do |xhtml|
+        xhtml.p "Shipped to #{order.address}"
+        xhtml.table do
+          xhtml.tr do
+            xhtml.th 'Product'
+            xhtml.th 'Quantity'
+            xhtml.th 'Total Price'
+          end
+          order.line_items.each do |item|
+            xhtml.tr do
+              xhtml.td item.product.title
+              xhtml.td item.quantity
+              xhtml.td number_to_currency item.total_price
+            end
+          end
+          xhtml.tr do
+            xhtml.th 'total', colspan: 2
+            xhtml.th number_to_currency \
+              order.line_items.map(&:total_price).sum
+          end
+        end
+        xhtml.p "Paid by #{order.pay_type}"
+      end
+      entry.author do |author|
+        author.name order.name
+        author.email order.email
+      end
+    end
+  end
+end
+
+
+//  app/models/product.rb dosyasında aşağıdaki değişiklikler yapılmıştır
+
+
+class Product < ActiveRecord::Base
+  has_many :line_items
+  has_many :orders, through: :line_items
+  #...
+
+  before_destroy :ensure_not_referenced_by_any_line_item
+
+  validates :title, :description, :image_url, presence: true
+  validates :price, numericality: {greater_than_or_equal_to: 0.01}
+# 
+  validates :title, uniqueness: true
+  validates :image_url, allow_blank: true, format: {
+    with:    %r{\.(gif|jpg|png)\Z}i,
+    message: 'must be a URL for GIF, JPG or PNG image.'
+  }
+  validates :title, length: {minimum: 10}
+
+  def self.latest
+    Product.order(:updated_at).last
+  end
+
+  private
+
+    # ensure that there are no line items referencing this product
+    def ensure_not_referenced_by_any_line_item
+      if line_items.empty?
+        return true
+      else
+        errors.add(:base, 'Line Items present')
+        return false
+      end
+    end
+end
+
+
+//   config/routes.rb dosyasında aşağıdaki değişiklikler yapıldı
+
+
+Depot::Application.routes.draw do
+  resources :orders
+  resources :line_items
+  resources :carts
+
+  get "store/index"
+  resources :products do
+    get :who_bought, on: :member
+  end
+end
+
+
+13. BÖLÜM
+
+
+//    
