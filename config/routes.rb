@@ -7,6 +7,8 @@
 # Visit http://www.pragmaticprogrammer.com/titles/rails4 for more book information.
 #---
 Repot::Application.routes.draw do
+  resources :users
+
   resources :orders
   resources :line_items
   resources :carts
